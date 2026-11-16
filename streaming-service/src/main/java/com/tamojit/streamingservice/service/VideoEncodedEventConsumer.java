@@ -1,0 +1,67 @@
+package com.tamojit.streamingservice.service;
+
+import com.tamojit.streamingservice.dto.PlaylistDto;
+import com.tamojit.streamingservice.event.PlaylistReadyEvent;
+import com.tamojit.streamingservice.event.VideoEncodedEvent;
+import com.tamojit.streamingservice.util.NormalizeWorkspacePath;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.stereotype.Service;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class VideoEncodedEventConsumer {
+    private static final String MASTER_PLAYLIST_KEY_PREFIX = "streaming:playlist:";
+    private static final String PLAYLIST_READY_TOPIC = "playlist.ready";
+
+    private final RedisTemplate<String, String> redisTemplate;
+    private final PlaylistService playlistService;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+
+    /*
+     * Listens on video.encoded topic in Kafka
+     * Stores master playlist key in Redis when encoding is complete
+     * This allows the streaming-service for faster access of playlist key
+     */
+    @KafkaListener(
+        topics = "video.encoded",
+        groupId = "streaming-service-group"
+    )
+    public void consumeVideoEncodedEvent(VideoEncodedEvent event) {
+        log.info("Consumed video.encoded event for movie: {} - success: {}", event.getNasPath(), event.isSuccess());
+
+        if (event.isSuccess()) {
+            // storing master playlist in redis
+            String cacheKey = MASTER_PLAYLIST_KEY_PREFIX + event.getNasPath();
+            redisTemplate.opsForValue().set(cacheKey, event.getMasterPlaylistPath());
+
+            String username = event.getWorkspaceRoot();
+            playlistService.savePlaylist(
+                username,
+                event.getNasPath(),
+                event.getMasterPlaylistPath(),
+                event.getThumbnailPath()
+            );
+
+            PlaylistDto view = NormalizeWorkspacePath.toClientView(
+                username,
+                event.getNasPath(),
+                event.getThumbnailPath()
+            );
+
+            kafkaTemplate.send(PLAYLIST_READY_TOPIC, new PlaylistReadyEvent(
+                username,
+                view.path(),
+                view.thumbnailUrl()
+            ));
+
+            log.info("Successfully cached playlist path for movie: {} → {}", event.getNasPath(), event.getMasterPlaylistPath());
+        } else {
+            log.error("Encoding failed for movie: {} - {}", event.getNasPath(), event.getErrorMessage());
+        }
+    }
+}

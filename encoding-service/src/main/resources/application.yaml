@@ -1,0 +1,68 @@
+spring:
+  application:
+    name: encoding-service
+  config:
+    import: optional:file:.env[.properties]
+  kafka:
+    bootstrap-servers: kafka:29092
+    consumer:
+      group-id: encoding-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      # Process one video at a time — prevents a second job being picked up while encoding is in progress
+      max-poll-records: 1
+      properties:
+        spring:
+          json:
+            trusted:
+              packages: "*"
+            use:
+              type:
+                headers: false
+            value:
+              default:
+                type: com.tamojit.encodingservice.event.VideoUploadedEvent
+    listener:
+      # MANUAL ack: Spring Kafka passes the Acknowledgment object to the listener method.
+      # The listener commits the offset immediately after pausing the partition,
+      # then encoding runs asynchronously — poll() keeps firing with no timeout risk.
+      ack-mode: manual
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+  grpc:
+    client:
+      channels:
+        nas-orchestrator:
+          address: static://nas-orchestrator:4092
+
+server:
+  port: 8083
+
+nas:
+  orchestrator:
+    base-url: http://nas-orchestrator:8081
+
+auth:
+  service:
+    base-url: http://${HEARTH_HOST}:8085
+
+service:
+  auth:
+    username: encoding-service
+    password: ${ENCODING_SERVICE_PASSWORD}
+
+# ffmpeg Config
+ffmpeg:
+  path: ${FFMPEG_PATH:ffmpeg}
+
+# Temp directory for encoding
+encoding:
+  base-path: ${TEMP_DIR:/tmp/encoding}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info
