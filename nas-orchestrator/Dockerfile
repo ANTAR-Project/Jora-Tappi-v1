@@ -17,7 +17,7 @@ FROM eclipse-temurin:21-jdk AS runner
 
 WORKDIR /app
 
-COPY --from=builder ./app/target/nasorchestrator-0.0.1-SNAPSHOT.jar ./app.jar
+COPY --from=builder ./app/target/nas-orchestrator-0.0.1-SNAPSHOT.jar ./app.jar
 
 EXPOSE 8081
 

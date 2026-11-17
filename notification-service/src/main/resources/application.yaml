@@ -4,7 +4,7 @@ spring:
   config:
     import: optional:file:.env[.properties]
   kafka:
-    bootstrap-servers: ${INFRA_HOST}:9092
+    bootstrap-servers: kafka:29092
     consumer:
       group-id: notification-service-group
       auto-offset-reset: earliest

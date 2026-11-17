@@ -46,7 +46,7 @@ nas:
 
 auth:
   service:
-    base-url: http://${HEARTH_HOST}:8085
+    base-url: http://auth-service:8085
 
 service:
   auth:

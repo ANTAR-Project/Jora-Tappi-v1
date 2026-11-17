@@ -12,15 +12,16 @@
     </parent>
 
     <groupId>com.antar</groupId>
-    <artifactId>auth-service-poc</artifactId>
-    <version>0.1.0</version>
-    <name>auth-service-poc</name>
+    <artifactId>auth-service</artifactId>
+    <version>0.0.1-SNAPSHOT</version>
+    <name>auth-service</name>
     <description>Standalone WebAuthn/FIDO2 biometric auth + RBAC PoC for ANTAR/HEARTH</description>
 
     <properties>
         <java.version>21</java.version>
         <webauthn.version>2.5.3</webauthn.version>
         <jjwt.version>0.12.6</jjwt.version>
+        <jackson-bom.version>2.18.4</jackson-bom.version>
     </properties>
 
     <dependencies>
@@ -50,6 +51,12 @@
             <groupId>com.yubico</groupId>
             <artifactId>webauthn-server-core</artifactId>
             <version>${webauthn.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.dataformat</groupId>
+                    <artifactId>jackson-dataformat-cbor</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <!-- JWT -->
@@ -93,14 +100,31 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-cbor</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>com.fasterxml.jackson</groupId>
+                <artifactId>jackson-bom</artifactId>
+                <version>2.18.4</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <build>
-        <finalName>auth-service-poc</finalName>
+        <finalName>auth-service</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

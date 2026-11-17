@@ -20,7 +20,7 @@ spring:
         nas-orchestrator:
           address: static://nas-orchestrator:4092
         auth-service:
-          address: static://${HEARTH_HOST}:4091
+          address: static://auth-service:4091
 
 server:
   port: 8082
@@ -31,7 +31,7 @@ nas:
 
 auth:
   service:
-    base-url: http://${HEARTH_HOST}:8085
+    base-url: http://auth-service:8085
 
 service:
   auth:
